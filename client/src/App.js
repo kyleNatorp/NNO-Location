@@ -292,7 +292,7 @@ function UploadPanel({ onSuccess }) {
 
       <div className="mode-buttons" style={{ marginBottom: '1.5rem' }}>
         <button className={mode === 'file' ? 'mode-btn active' : 'mode-btn'} onClick={() => setMode('file')}>
-          CSV / JSON File Upload
+          Excel / CSV / JSON Upload
         </button>
         <button className={mode === 'api' ? 'mode-btn active' : 'mode-btn'} onClick={() => setMode('api')}>
           API / JSON Push
@@ -304,13 +304,13 @@ function UploadPanel({ onSuccess }) {
           <label className="file-label">
             <input
               type="file"
-              accept=".csv,.json"
+              accept=".csv,.json,.xlsx,.xls"
               onChange={e => setFile(e.target.files[0])}
             />
-            {file ? file.name : 'Choose a CSV or JSON file…'}
+            {file ? file.name : 'Choose an Excel, CSV, or JSON file…'}
           </label>
           <div className="upload-hint">
-            CSV columns: <code>PullGroup, ProductID, ProductSize, Genus, BotanicalName, CommonName, CommonNameAlpha, Outlet Location, Nursery Location</code>
+            Columns: <code>PullGroup, ProductID, ProductSize, Genus, BotanicalName, CommonName, CommonNameAlpha, Outlet Location, Nursery Location</code>
           </div>
           <button className="upload-btn" type="submit" disabled={!file || busy}>
             {busy ? 'Uploading…' : 'Upload & Replace Data'}

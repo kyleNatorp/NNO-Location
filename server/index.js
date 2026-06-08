@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
+const XLSX = require('xlsx');
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
@@ -11,7 +12,7 @@ const PORT = process.env.PORT || 3001;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'plants.db');
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // --- Database setup ---
 const db = new Database(DB_PATH);
@@ -126,13 +127,19 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file provided' });
 
-    const content = req.file.buffer.toString('utf8');
+    const name = req.file.originalname.toLowerCase();
     let rows;
 
-    if (req.file.originalname.endsWith('.json')) {
+    if (name.endsWith('.json')) {
+      const content = req.file.buffer.toString('utf8');
       rows = JSON.parse(content);
       if (!Array.isArray(rows)) rows = rows.data ?? rows.plants ?? Object.values(rows);
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
     } else {
+      const content = req.file.buffer.toString('utf8');
       rows = parse(content, { columns: true, skip_empty_lines: true, trim: true });
     }
 
