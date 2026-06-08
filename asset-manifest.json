@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/NNO-Location/static/css/main.06880c5e.css",
+    "main.js": "/NNO-Location/static/js/main.ae56fa0f.js",
+    "index.html": "/NNO-Location/index.html",
+    "main.06880c5e.css.map": "/NNO-Location/static/css/main.06880c5e.css.map",
+    "main.ae56fa0f.js.map": "/NNO-Location/static/js/main.ae56fa0f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.06880c5e.css",
+    "static/js/main.ae56fa0f.js"
+  ]
+}
