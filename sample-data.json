@@ -1,0 +1,46 @@
+[
+  {
+    "PullGroup": "TREES",
+    "ProductID": "T001",
+    "ProductSize": "3 gal",
+    "Genus": "Acer",
+    "BotanicalName": "Acer palmatum",
+    "CommonName": "Japanese Maple",
+    "CommonNameAlpha": "Maple Japanese",
+    "Outlet Location": "A-12",
+    "Nursery Location": "NB-04"
+  },
+  {
+    "PullGroup": "TREES",
+    "ProductID": "T002",
+    "ProductSize": "7 gal",
+    "Genus": "Acer",
+    "BotanicalName": "Acer rubrum",
+    "CommonName": "Red Maple",
+    "CommonNameAlpha": "Maple Red",
+    "Outlet Location": "A-13",
+    "Nursery Location": "NB-05"
+  },
+  {
+    "PullGroup": "SHRUBS",
+    "ProductID": "S001",
+    "ProductSize": "1 gal",
+    "Genus": "Quercus",
+    "BotanicalName": "Quercus palustris",
+    "CommonName": "Pin Oak",
+    "CommonNameAlpha": "Oak Pin",
+    "Outlet Location": "B-03",
+    "Nursery Location": "NC-01"
+  },
+  {
+    "PullGroup": "PERENNIALS",
+    "ProductID": "P001",
+    "ProductSize": "4 in",
+    "Genus": "Hosta",
+    "BotanicalName": "Hosta sieboldiana",
+    "CommonName": "Hosta",
+    "CommonNameAlpha": "Hosta",
+    "Outlet Location": "C-07",
+    "Nursery Location": "ND-02"
+  }
+]
