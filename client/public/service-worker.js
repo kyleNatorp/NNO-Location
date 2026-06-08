@@ -1,4 +1,4 @@
-const CACHE = 'nno-location-v1';
+const CACHE = 'nno-location-v2';
 const PRECACHE = [
   '/',
   '/index.html',
