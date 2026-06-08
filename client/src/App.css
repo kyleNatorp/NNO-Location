@@ -241,39 +241,24 @@ body {
 .plant-list-table tbody tr { border-bottom: 1px solid var(--gray-200); }
 .plant-list-table tbody tr.row-even { background: #ffffff; }
 .plant-list-table tbody tr.row-odd  { background: #f0faf4; }
-.plant-list-table tbody tr:hover { background: #c8ecd4; }
-.plant-list-table td { padding: .7rem .85rem; vertical-align: middle; }
+.plant-list-table td { padding: .65rem .75rem; vertical-align: middle; }
 
-td.col-name { width: 58%; }
-td.col-size { width: 10%; white-space: nowrap; font-weight: 700; color: var(--green-mid); text-align: center; font-size: .9rem; }
-td.col-loc, th.col-loc { width: 22%; text-align: right; }
-th.col-loc { text-align: right; }
+td.col-name { width: 68%; }
+td.col-loc, th.col-loc { width: 32%; text-align: right; }
 
 .name-primary { font-weight: 600; color: var(--gray-800); line-height: 1.35; font-size: .95rem; }
-.name-secondary { font-size: .8rem; color: var(--gray-600); margin-top: .2rem; line-height: 1.3; }
+.name-secondary { font-size: .8rem; color: var(--gray-600); margin-top: .15rem; line-height: 1.3; }
+.name-size { font-size: .75rem; font-weight: 700; color: var(--green-mid); margin-top: .2rem; }
 
-.loc-outlet, .loc-nursery {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: .4rem;
-}
+.loc-outlet, .loc-nursery { display: flex; justify-content: flex-end; }
 .loc-nursery { margin-top: .3rem; }
-.loc-label {
-  font-size: .65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .4px;
-  color: var(--gray-600);
-  flex-shrink: 0;
-}
 .loc-outlet .loc-value {
   font-family: monospace;
   font-size: .9rem;
   font-weight: 700;
   color: var(--gray-800);
   background: var(--gray-200);
-  padding: .1rem .45rem;
+  padding: .15rem .5rem;
   border-radius: 5px;
 }
 .loc-nursery .loc-value {
@@ -282,7 +267,7 @@ th.col-loc { text-align: right; }
   font-weight: 700;
   color: var(--green-dark);
   background: var(--green-pale);
-  padding: .1rem .45rem;
+  padding: .15rem .5rem;
   border-radius: 5px;
 }
 

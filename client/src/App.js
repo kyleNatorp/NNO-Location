@@ -141,7 +141,6 @@ export default function App() {
           <nav className="nav">
             <button className={tab === 'browse' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('browse')}>Browse</button>
             <button className={tab === 'search' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('search')}>Search</button>
-            <button className={tab === 'update' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('update')}>Update Data</button>
           </nav>
         </div>
       </header>
@@ -221,13 +220,7 @@ export default function App() {
                   <table className="plant-list-table">
                     <thead>
                       <tr>
-                        <th className="col-name">
-                          {sortBy === 'botanical' ? 'Botanical Name' : 'Common Name'}
-                          <span className="col-name-sub">
-                            {sortBy === 'botanical' ? ' / Common Name' : ' / Botanical Name'}
-                          </span>
-                        </th>
-                        <th className="col-size">Size</th>
+                        <th className="col-name">Variety</th>
                         <th className="col-loc">Location</th>
                       </tr>
                     </thead>
@@ -246,18 +239,18 @@ export default function App() {
                                   {sortBy === 'botanical' ? secondary : <em>{secondary}</em>}
                                 </div>
                               )}
+                              {r.ProductSize && (
+                                <div className="name-size">{r.ProductSize}</div>
+                              )}
                             </td>
-                            <td className="col-size">{r.ProductSize}</td>
                             <td className="col-loc">
                               {r['Outlet Location'] && (
                                 <div className="loc-outlet">
-                                  <span className="loc-label">Outlet</span>
                                   <span className="loc-value">{r['Outlet Location']}</span>
                                 </div>
                               )}
                               {r['Nursery Location'] && (
                                 <div className="loc-nursery">
-                                  <span className="loc-label">Nursery</span>
                                   <span className="loc-value">{r['Nursery Location']}</span>
                                 </div>
                               )}
