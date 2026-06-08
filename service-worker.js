@@ -1,4 +1,4 @@
-const CACHE = 'nno-location-v1';
+const CACHE = 'nno-location-v2';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -26,7 +26,6 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Always network-first for API calls
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(
       fetch(e.request).catch(() =>
@@ -38,7 +37,6 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for static assets
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
