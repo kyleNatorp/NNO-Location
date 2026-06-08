@@ -228,8 +228,7 @@ export default function App() {
                           </span>
                         </th>
                         <th className="col-size">Size</th>
-                        <th className="col-loc">Outlet</th>
-                        <th className="col-loc">Nursery</th>
+                        <th className="col-loc">Location</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -237,7 +236,7 @@ export default function App() {
                         const primary = sortBy === 'botanical' ? r.BotanicalName : r.CommonName;
                         const secondary = sortBy === 'botanical' ? r.CommonName : r.BotanicalName;
                         return (
-                          <tr key={i}>
+                          <tr key={i} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
                             <td className="col-name">
                               <div className="name-primary">
                                 {sortBy === 'botanical' ? <em>{primary}</em> : primary}
@@ -249,8 +248,20 @@ export default function App() {
                               )}
                             </td>
                             <td className="col-size">{r.ProductSize}</td>
-                            <td className="col-loc outlet">{r['Outlet Location']}</td>
-                            <td className="col-loc nursery">{r['Nursery Location']}</td>
+                            <td className="col-loc">
+                              {r['Outlet Location'] && (
+                                <div className="loc-outlet">
+                                  <span className="loc-label">Outlet</span>
+                                  <span className="loc-value">{r['Outlet Location']}</span>
+                                </div>
+                              )}
+                              {r['Nursery Location'] && (
+                                <div className="loc-nursery">
+                                  <span className="loc-label">Nursery</span>
+                                  <span className="loc-value">{r['Nursery Location']}</span>
+                                </div>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
