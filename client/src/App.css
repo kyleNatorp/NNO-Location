@@ -70,6 +70,28 @@ body {
   width: 100%;
 }
 
+/* ===== Global search bar (groups page) ===== */
+.global-search-bar {
+  margin-bottom: 1.1rem;
+}
+.global-search-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+/* Light-mode sort toggle (on groups page) */
+.sort-toggle-light {
+  background: var(--gray-200);
+}
+.sort-toggle-light .sort-btn {
+  color: var(--gray-600);
+}
+.sort-toggle-light .sort-btn.active {
+  background: var(--green-mid);
+  color: var(--white);
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+
 /* ===== Group selection ===== */
 .page-title {
   font-size: 1.3rem;
