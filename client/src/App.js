@@ -151,7 +151,38 @@ export default function App() {
 
                 {results.rows.length === 0
                   ? <div className="empty">No plants found. Try a different search term.</div>
-                  : (
+                  : <>
+                    {/* Card view — shown on mobile */}
+                    <div className="result-cards">
+                      {results.rows.map(r => (
+                        <div className="result-card" key={r.id}>
+                          <div className="card-genus">{r.Genus}</div>
+                          <div className="card-botanical">{r.BotanicalName}</div>
+                          {r.CommonName && <div className="card-common">{r.CommonName}</div>}
+                          <div className="card-row">
+                            {r.ProductSize && (
+                              <span className="card-pill">
+                                <span className="card-pill-label">Size</span>
+                                <span className="card-pill-value">{r.ProductSize}</span>
+                              </span>
+                            )}
+                            {r.OutletLocation && (
+                              <span className="card-pill location">
+                                <span className="card-pill-label">Outlet</span>
+                                <span className="card-pill-value">{r.OutletLocation}</span>
+                              </span>
+                            )}
+                            {r.NurseryLocation && (
+                              <span className="card-pill location">
+                                <span className="card-pill-label">Nursery</span>
+                                <span className="card-pill-value">{r.NurseryLocation}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Table view — shown on desktop */}
                     <div className="table-wrap">
                       <table className="results-table">
                         <thead>
@@ -178,7 +209,7 @@ export default function App() {
                         </tbody>
                       </table>
                     </div>
-                  )
+                  </>
                 }
               </>
             )}
