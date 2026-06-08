@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import './App.css';
 
 const DATA_URL = process.env.PUBLIC_URL + '/plants.json';
-const PAGE_SIZE = 75;
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -14,22 +13,14 @@ function useDebounce(value, delay) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState('browse');
   const [allPlants, setAllPlants] = useState(null);
   const [loadError, setLoadError] = useState(null);
 
+  // Browse state
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [sortBy, setSortBy] = useState('botanical');
-  const [browsePage, setBrowsePage] = useState(1);
+  const [sortBy, setSortBy] = useState('botanical'); // 'botanical' | 'common'
   const [groupSearch, setGroupSearch] = useState('');
   const debouncedGroupSearch = useDebounce(groupSearch, 150);
-
-  const [searchBy, setSearchBy] = useState('genus');
-  const [query, setQuery] = useState('');
-  const [showSugg, setShowSugg] = useState(false);
-  const [searchPage, setSearchPage] = useState(1);
-  const inputRef = useRef(null);
-  const debouncedQuery = useDebounce(query, 200);
 
   useEffect(() => {
     fetch(DATA_URL)
@@ -38,6 +29,7 @@ export default function App() {
       .catch(err => setLoadError(err.message));
   }, []);
 
+  // Unique groups in a consistent order
   const groups = useMemo(() => {
     if (!allPlants) return [];
     const seen = new Set();
@@ -45,15 +37,21 @@ export default function App() {
     return [...seen].sort();
   }, [allPlants]);
 
+  // Plants for the selected group, sorted
   const groupPlants = useMemo(() => {
     if (!allPlants || !selectedGroup) return [];
     const filtered = allPlants.filter(p => p.PullGroup === selectedGroup);
     if (sortBy === 'common') {
-      return [...filtered].sort((a, b) => (a.CommonName || '').localeCompare(b.CommonName || ''));
+      return [...filtered].sort((a, b) =>
+        (a.CommonName || '').localeCompare(b.CommonName || '')
+      );
     }
-    return [...filtered].sort((a, b) => (a.BotanicalName || '').localeCompare(b.BotanicalName || ''));
+    return [...filtered].sort((a, b) =>
+      (a.BotanicalName || '').localeCompare(b.BotanicalName || '')
+    );
   }, [allPlants, selectedGroup, sortBy]);
 
+  // Filter within the group by the inline search box
   const groupFiltered = useMemo(() => {
     const q = debouncedGroupSearch.trim().toLowerCase();
     if (!q) return groupPlants;
@@ -63,64 +61,69 @@ export default function App() {
     );
   }, [groupPlants, debouncedGroupSearch]);
 
-  const browsePages = Math.ceil(groupFiltered.length / PAGE_SIZE);
-  const browseRows = groupFiltered.slice((browsePage - 1) * PAGE_SIZE, browsePage * PAGE_SIZE);
+  function selectGroup(g) {
+    setSelectedGroup(g);
+    setGroupSearch('');
+    setSortBy('botanical');
+  }
 
-  function selectGroup(g) { setSelectedGroup(g); setBrowsePage(1); setGroupSearch(''); }
-  function clearGroup() { setSelectedGroup(null); setGroupSearch(''); }
-
-  const filtered = useMemo(() => {
-    if (!allPlants) return [];
-    const q = debouncedQuery.trim().toLowerCase();
-    if (!q) return [];
-    if (searchBy === 'genus') return allPlants.filter(p => p.Genus && p.Genus.toLowerCase().includes(q));
-    return allPlants.filter(p =>
-      (p.CommonName && p.CommonName.toLowerCase().includes(q)) ||
-      (p.CommonNameAlpha && p.CommonNameAlpha.toLowerCase().includes(q))
-    );
-  }, [allPlants, debouncedQuery, searchBy]);
-
-  useEffect(() => { setBrowsePage(1); }, [debouncedGroupSearch]);
-  useEffect(() => { setSearchPage(1); }, [debouncedQuery, searchBy]);
-
-  const searchPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const searchRows = filtered.slice((searchPage - 1) * PAGE_SIZE, searchPage * PAGE_SIZE);
-
-  const suggestions = useMemo(() => {
-    if (!allPlants || debouncedQuery.length < 2) return [];
-    const q = debouncedQuery.toLowerCase();
-    const seen = new Set();
-    const results = [];
-    for (const p of allPlants) {
-      const val = searchBy === 'genus' ? p.Genus : p.CommonName;
-      if (val && val.toLowerCase().includes(q) && !seen.has(val)) { seen.add(val); results.push(val); if (results.length >= 8) break; }
-    }
-    return results;
-  }, [allPlants, debouncedQuery, searchBy]);
-
-  function switchTab(t) { setTab(t); if (t === 'browse') setSelectedGroup(null); }
+  function clearGroup() {
+    setSelectedGroup(null);
+    setGroupSearch('');
+  }
 
   return (
     <div className="app">
-      <header className="header">
-        <div className="header-inner">
-          <div className="logo">
-            <span className="logo-leaf">🌿</span>
-            <span className="logo-text">NNO Location</span>
+      {/* ===== HEADER: group controls when viewing a group, logo otherwise ===== */}
+      {selectedGroup ? (
+        <header className="header header-group">
+          <div className="group-controls">
+            <div className="group-controls-row1">
+              <button className="back-btn" onClick={clearGroup}>← Groups</button>
+              <div className="sort-toggle">
+                <button
+                  className={sortBy === 'botanical' ? 'sort-btn active' : 'sort-btn'}
+                  onClick={() => setSortBy('botanical')}
+                >Botanical</button>
+                <button
+                  className={sortBy === 'common' ? 'sort-btn active' : 'sort-btn'}
+                  onClick={() => setSortBy('common')}
+                >Common</button>
+              </div>
+            </div>
+            <div className="group-controls-name">{selectedGroup}</div>
+            <div className="group-search-wrap">
+              <input
+                className="group-search-input"
+                type="text"
+                placeholder="Filter plants in this group…"
+                value={groupSearch}
+                onChange={e => setGroupSearch(e.target.value)}
+                autoComplete="off"
+              />
+              {groupSearch && (
+                <button className="group-search-clear" onClick={() => setGroupSearch('')}>✕</button>
+              )}
+            </div>
           </div>
-          {allPlants && <span className="stat-badge">{allPlants.length.toLocaleString()} plants</span>}
-          <nav className="nav">
-            <button className={tab === 'browse' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('browse')}>Browse</button>
-            <button className={tab === 'search' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('search')}>Search</button>
-          </nav>
-        </div>
-      </header>
+        </header>
+      ) : (
+        <header className="header">
+          <div className="header-inner">
+            <div className="logo">
+              <span className="logo-leaf">🌿</span>
+              <span className="logo-text">NNO Location</span>
+            </div>
+          </div>
+        </header>
+      )}
 
       <main className="main">
         {loadError && <div className="status-err">Could not load plant data: {loadError}</div>}
         {!allPlants && !loadError && <div className="spinner-wrap"><div className="spinner" /></div>}
 
-        {tab === 'browse' && allPlants && !selectedGroup && (
+        {/* ===== GROUP GRID ===== */}
+        {allPlants && !selectedGroup && (
           <div className="groups-panel">
             <h1 className="page-title">Select a Plant Group</h1>
             <div className="group-grid">
@@ -135,44 +138,9 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'browse' && allPlants && selectedGroup && (
+        {/* ===== GROUP DETAIL ===== */}
+        {allPlants && selectedGroup && (
           <div className="group-detail">
-            <div className="detail-header">
-              <button className="back-btn" onClick={clearGroup}>← Groups</button>
-              <h2 className="detail-title">{selectedGroup}</h2>
-              <div className="sort-toggle">
-                <button className={sortBy === 'botanical' ? 'sort-btn active' : 'sort-btn'} onClick={() => { setSortBy('botanical'); setBrowsePage(1); }}>Botanical</button>
-                <button className={sortBy === 'common' ? 'sort-btn active' : 'sort-btn'} onClick={() => { setSortBy('common'); setBrowsePage(1); }}>Common</button>
-              </div>
-            </div>
-
-            <div className="group-search-wrap">
-              <input
-                className="group-search-input"
-                type="text"
-                placeholder="Filter plants in this group…"
-                value={groupSearch}
-                onChange={e => setGroupSearch(e.target.value)}
-                autoComplete="off"
-              />
-              {groupSearch && <button className="group-search-clear" onClick={() => setGroupSearch('')}>✕</button>}
-            </div>
-
-            <div className="results-header">
-              <span>
-                {groupFiltered.length !== groupPlants.length
-                  ? `${groupFiltered.length} of ${groupPlants.length} plants`
-                  : `${groupPlants.length} plant${groupPlants.length !== 1 ? 's' : ''}`}
-              </span>
-              {browsePages > 1 && (
-                <div className="pagination">
-                  <button disabled={browsePage <= 1} onClick={() => setBrowsePage(p => p - 1)}>‹</button>
-                  <span>{browsePage} / {browsePages}</span>
-                  <button disabled={browsePage >= browsePages} onClick={() => setBrowsePage(p => p + 1)}>›</button>
-                </div>
-              )}
-            </div>
-
             {groupFiltered.length === 0
               ? <div className="empty">No plants match "{groupSearch}".</div>
               : <div className="plant-list-wrap">
@@ -184,22 +152,34 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {browseRows.map((r, i) => {
+                      {groupFiltered.map((r, i) => {
                         const primary = sortBy === 'botanical' ? r.BotanicalName : r.CommonName;
                         const secondary = sortBy === 'botanical' ? r.CommonName : r.BotanicalName;
                         return (
                           <tr key={i} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
                             <td className="col-name">
-                              <div className="name-primary">{sortBy === 'botanical' ? <em>{primary}</em> : primary}</div>
-                              {secondary && <div className="name-secondary">{sortBy === 'botanical' ? secondary : <em>{secondary}</em>}</div>}
-                              {r.ProductSize && <div className="name-size">{r.ProductSize}</div>}
+                              <div className="name-primary">
+                                {sortBy === 'botanical' ? <em>{primary}</em> : primary}
+                              </div>
+                              {secondary && (
+                                <div className="name-secondary">
+                                  {sortBy === 'botanical' ? secondary : <em>{secondary}</em>}
+                                </div>
+                              )}
+                              {r.ProductSize && (
+                                <div className="name-size">{r.ProductSize}</div>
+                              )}
                             </td>
                             <td className="col-loc">
                               {r['Outlet Location'] && (
-                                <div className="loc-outlet"><span className="loc-value">{r['Outlet Location']}</span></div>
+                                <div className="loc-outlet">
+                                  <span className="loc-value">{r['Outlet Location']}</span>
+                                </div>
                               )}
                               {r['Nursery Location'] && (
-                                <div className="loc-nursery"><span className="loc-value">{r['Nursery Location']}</span></div>
+                                <div className="loc-nursery">
+                                  <span className="loc-value">{r['Nursery Location']}</span>
+                                </div>
                               )}
                             </td>
                           </tr>
@@ -211,87 +191,7 @@ export default function App() {
             }
           </div>
         )}
-
-        {tab === 'search' && allPlants && (
-          <div className="search-panel">
-            <div className="search-bar-card">
-              <h1 className="search-title">Find a Plant</h1>
-              <div className="mode-buttons">
-                <button className={searchBy === 'genus' ? 'mode-btn active' : 'mode-btn'} onClick={() => { setSearchBy('genus'); setQuery(''); }}>Search by Genus</button>
-                <button className={searchBy === 'common' ? 'mode-btn active' : 'mode-btn'} onClick={() => { setSearchBy('common'); setQuery(''); }}>Search by Common Name</button>
-              </div>
-              <div className="search-input-wrap">
-                <input ref={inputRef} className="search-input" type="text"
-                  placeholder={searchBy === 'genus' ? 'e.g. Acer, Malus…' : 'e.g. Apple, Maple…'}
-                  value={query}
-                  onChange={e => { setQuery(e.target.value); setShowSugg(true); }}
-                  onFocus={() => setShowSugg(true)}
-                  onBlur={() => setTimeout(() => setShowSugg(false), 150)}
-                  autoComplete="off" />
-                {showSugg && suggestions.length > 0 && (
-                  <ul className="suggestions">
-                    {suggestions.map(s => <li key={s} onMouseDown={() => { setQuery(s); setShowSugg(false); }}>{s}</li>)}
-                  </ul>
-                )}
-              </div>
-            </div>
-            {!debouncedQuery.trim() && (
-              <div className="placeholder"><div className="placeholder-icon">🔍</div><p>Type a genus or common name to find plants.</p></div>
-            )}
-            {debouncedQuery.trim() && (
-              <>
-                <div className="results-header">
-                  <span>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-                  {searchPages > 1 && (
-                    <div className="pagination">
-                      <button disabled={searchPage <= 1} onClick={() => setSearchPage(p => p - 1)}>‹ Prev</button>
-                      <span>Page {searchPage} of {searchPages}</span>
-                      <button disabled={searchPage >= searchPages} onClick={() => setSearchPage(p => p + 1)}>Next ›</button>
-                    </div>
-                  )}
-                </div>
-                {filtered.length === 0
-                  ? <div className="empty">No plants found.</div>
-                  : <>
-                    <div className="result-cards">{searchRows.map((r, i) => <PlantCard key={i} r={r} sortBy="botanical" />)}</div>
-                    <div className="table-wrap">
-                      <table className="results-table">
-                        <thead><tr><th>Genus</th><th>Botanical Name</th><th>Common Name</th><th>Size</th><th>Outlet</th><th>Nursery</th></tr></thead>
-                        <tbody>{searchRows.map((r, i) => (
-                          <tr key={i}>
-                            <td className="genus-cell">{r.Genus}</td>
-                            <td className="botanical-cell"><em>{r.BotanicalName}</em></td>
-                            <td>{r.CommonName}</td>
-                            <td className="size-cell">{r.ProductSize}</td>
-                            <td className="location-cell">{r['Outlet Location']}</td>
-                            <td className="location-cell nursery">{r['Nursery Location']}</td>
-                          </tr>
-                        ))}</tbody>
-                      </table>
-                    </div>
-                  </>
-                }
-              </>
-            )}
-          </div>
-        )}
       </main>
-    </div>
-  );
-}
-
-function PlantCard({ r, sortBy }) {
-  const primary = sortBy === 'common' ? r.CommonName : r.BotanicalName;
-  const secondary = sortBy === 'common' ? r.BotanicalName : r.CommonName;
-  return (
-    <div className="result-card">
-      <div className="card-primary">{sortBy === 'botanical' ? <em>{primary}</em> : primary}</div>
-      {secondary && <div className="card-secondary">{sortBy === 'botanical' ? secondary : <em>{secondary}</em>}</div>}
-      <div className="card-row">
-        {r.ProductSize && (<span className="card-pill"><span className="card-pill-label">Size</span><span className="card-pill-value">{r.ProductSize}</span></span>)}
-        {r['Outlet Location'] && (<span className="card-pill location"><span className="card-pill-label">Outlet</span><span className="card-pill-value">{r['Outlet Location']}</span></span>)}
-        {r['Nursery Location'] && (<span className="card-pill location"><span className="card-pill-label">Nursery</span><span className="card-pill-value">{r['Nursery Location']}</span></span>)}
-      </div>
     </div>
   );
 }
