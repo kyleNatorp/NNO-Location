@@ -112,7 +112,6 @@ export default function App() {
           <nav className="nav">
             <button className={tab === 'browse' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('browse')}>Browse</button>
             <button className={tab === 'search' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('search')}>Search</button>
-            <button className={tab === 'update' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('update')}>Update Data</button>
           </nav>
         </div>
       </header>
@@ -180,11 +179,7 @@ export default function App() {
                   <table className="plant-list-table">
                     <thead>
                       <tr>
-                        <th className="col-name">
-                          {sortBy === 'botanical' ? 'Botanical Name' : 'Common Name'}
-                          <span className="col-name-sub">{sortBy === 'botanical' ? ' / Common Name' : ' / Botanical Name'}</span>
-                        </th>
-                        <th className="col-size">Size</th>
+                        <th className="col-name">Variety</th>
                         <th className="col-loc">Location</th>
                       </tr>
                     </thead>
@@ -197,20 +192,14 @@ export default function App() {
                             <td className="col-name">
                               <div className="name-primary">{sortBy === 'botanical' ? <em>{primary}</em> : primary}</div>
                               {secondary && <div className="name-secondary">{sortBy === 'botanical' ? secondary : <em>{secondary}</em>}</div>}
+                              {r.ProductSize && <div className="name-size">{r.ProductSize}</div>}
                             </td>
-                            <td className="col-size">{r.ProductSize}</td>
                             <td className="col-loc">
                               {r['Outlet Location'] && (
-                                <div className="loc-outlet">
-                                  <span className="loc-label">Outlet</span>
-                                  <span className="loc-value">{r['Outlet Location']}</span>
-                                </div>
+                                <div className="loc-outlet"><span className="loc-value">{r['Outlet Location']}</span></div>
                               )}
                               {r['Nursery Location'] && (
-                                <div className="loc-nursery">
-                                  <span className="loc-label">Nursery</span>
-                                  <span className="loc-value">{r['Nursery Location']}</span>
-                                </div>
+                                <div className="loc-nursery"><span className="loc-value">{r['Nursery Location']}</span></div>
                               )}
                             </td>
                           </tr>
@@ -267,7 +256,7 @@ export default function App() {
                     <div className="result-cards">{searchRows.map((r, i) => <PlantCard key={i} r={r} sortBy="botanical" />)}</div>
                     <div className="table-wrap">
                       <table className="results-table">
-                        <thead><tr><th>Genus</th><th>Botanical Name</th><th>Common Name</th><th>Size</th><th>Outlet Location</th><th>Nursery Location</th></tr></thead>
+                        <thead><tr><th>Genus</th><th>Botanical Name</th><th>Common Name</th><th>Size</th><th>Outlet</th><th>Nursery</th></tr></thead>
                         <tbody>{searchRows.map((r, i) => (
                           <tr key={i}>
                             <td className="genus-cell">{r.Genus}</td>
@@ -286,8 +275,6 @@ export default function App() {
             )}
           </div>
         )}
-
-        {tab === 'update' && <UpdatePanel />}
       </main>
     </div>
   );
@@ -324,18 +311,4 @@ function groupIcon(group) {
   if (g.includes('bulb')) return '🌷';
   if (g.includes('cactus') || g.includes('succulent')) return '🌵';
   return '🪴';
-}
-
-function UpdatePanel() {
-  return (
-    <div className="upload-panel">
-      <h2>Update Plant Data</h2>
-      <p className="upload-note">Replace <code>client/public/plants.json</code> in the repository and push — the site rebuilds automatically within a minute.</p>
-      <div className="update-steps">
-        <div className="update-step"><div className="step-num">1</div><div className="step-body"><strong>Export your data</strong><p>Run your SQL query and export as a JSON array with fields: <code>PullGroup, ProductID, ProductSize, Genus, BotanicalName, CommonName, CommonNameAlpha, Outlet Location, Nursery Location</code></p></div></div>
-        <div className="update-step"><div className="step-num">2</div><div className="step-body"><strong>Replace plants.json</strong><p>Navigate to <code>client/public/plants.json</code> in the GitHub repo, click the pencil icon, paste your new data, and commit.</p></div></div>
-        <div className="update-step"><div className="step-num">3</div><div className="step-body"><strong>Wait ~1 minute</strong><p>GitHub Actions rebuilds the site automatically. Refresh the app and the new data will be live.</p></div></div>
-      </div>
-    </div>
-  );
 }
