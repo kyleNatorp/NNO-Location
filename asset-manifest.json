@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/NNO-Location/static/css/main.31b9abe7.css",
-    "main.js": "/NNO-Location/static/js/main.5d92d034.js",
+    "main.js": "/NNO-Location/static/js/main.53a85a1a.js",
     "index.html": "/NNO-Location/index.html",
     "main.31b9abe7.css.map": "/NNO-Location/static/css/main.31b9abe7.css.map",
-    "main.5d92d034.js.map": "/NNO-Location/static/js/main.5d92d034.js.map"
+    "main.53a85a1a.js.map": "/NNO-Location/static/js/main.53a85a1a.js.map"
   },
   "entrypoints": [
     "static/css/main.31b9abe7.css",
-    "static/js/main.5d92d034.js"
+    "static/js/main.53a85a1a.js"
   ]
 }
