@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import './App.css';
 
 const DATA_URL = process.env.PUBLIC_URL + '/plants.json';
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 75;
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -14,17 +14,21 @@ function useDebounce(value, delay) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState('search');
+  const [tab, setTab] = useState('browse');
   const [allPlants, setAllPlants] = useState(null);
   const [loadError, setLoadError] = useState(null);
+
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [sortBy, setSortBy] = useState('botanical');
+  const [browsePage, setBrowsePage] = useState(1);
+
   const [searchBy, setSearchBy] = useState('genus');
   const [query, setQuery] = useState('');
   const [showSugg, setShowSugg] = useState(false);
-  const [page, setPage] = useState(1);
+  const [searchPage, setSearchPage] = useState(1);
   const inputRef = useRef(null);
   const debouncedQuery = useDebounce(query, 200);
 
-  // Load plant data once
   useEffect(() => {
     fetch(DATA_URL)
       .then(r => { if (!r.ok) throw new Error('Failed to load data'); return r.json(); })
@@ -32,11 +36,36 @@ export default function App() {
       .catch(err => setLoadError(err.message));
   }, []);
 
-  // Filtered results (client-side)
+  const groups = useMemo(() => {
+    if (!allPlants) return [];
+    const seen = new Set();
+    allPlants.forEach(p => p.PullGroup && seen.add(p.PullGroup));
+    return [...seen].sort();
+  }, [allPlants]);
+
+  const groupPlants = useMemo(() => {
+    if (!allPlants || !selectedGroup) return [];
+    const filtered = allPlants.filter(p => p.PullGroup === selectedGroup);
+    if (sortBy === 'common') {
+      return [...filtered].sort((a, b) =>
+        (a.CommonName || '').localeCompare(b.CommonName || '')
+      );
+    }
+    return [...filtered].sort((a, b) =>
+      (a.BotanicalName || '').localeCompare(b.BotanicalName || '')
+    );
+  }, [allPlants, selectedGroup, sortBy]);
+
+  const browsePages = Math.ceil(groupPlants.length / PAGE_SIZE);
+  const browseRows = groupPlants.slice((browsePage - 1) * PAGE_SIZE, browsePage * PAGE_SIZE);
+
+  function selectGroup(g) { setSelectedGroup(g); setBrowsePage(1); }
+  function clearGroup() { setSelectedGroup(null); }
+
   const filtered = useMemo(() => {
     if (!allPlants) return [];
     const q = debouncedQuery.trim().toLowerCase();
-    if (!q) return allPlants;
+    if (!q) return [];
     if (searchBy === 'genus') {
       return allPlants.filter(p => p.Genus && p.Genus.toLowerCase().includes(q));
     }
@@ -46,13 +75,11 @@ export default function App() {
     );
   }, [allPlants, debouncedQuery, searchBy]);
 
-  // Reset page when search changes
-  useEffect(() => { setPage(1); }, [debouncedQuery, searchBy]);
+  useEffect(() => { setSearchPage(1); }, [debouncedQuery, searchBy]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const searchPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const searchRows = filtered.slice((searchPage - 1) * PAGE_SIZE, searchPage * PAGE_SIZE);
 
-  // Autocomplete suggestions
   const suggestions = useMemo(() => {
     if (!allPlants || debouncedQuery.length < 2) return [];
     const q = debouncedQuery.toLowerCase();
@@ -69,19 +96,7 @@ export default function App() {
     return results;
   }, [allPlants, debouncedQuery, searchBy]);
 
-  function pickSuggestion(s) {
-    setQuery(s);
-    setShowSugg(false);
-    inputRef.current?.blur();
-  }
-
-  function switchSearchBy(mode) {
-    setSearchBy(mode);
-    setQuery('');
-    setShowSugg(false);
-  }
-
-  const searched = debouncedQuery.trim().length > 0;
+  function switchTab(t) { setTab(t); if (t === 'browse') setSelectedGroup(null); }
 
   return (
     <div className="app">
@@ -95,134 +110,141 @@ export default function App() {
             <span className="stat-badge">{allPlants.length.toLocaleString()} plants</span>
           )}
           <nav className="nav">
-            <button className={tab === 'search' ? 'nav-btn active' : 'nav-btn'} onClick={() => setTab('search')}>Search</button>
-            <button className={tab === 'update' ? 'nav-btn active' : 'nav-btn'} onClick={() => setTab('update')}>Update Data</button>
+            <button className={tab === 'browse' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('browse')}>Browse</button>
+            <button className={tab === 'search' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('search')}>Search</button>
+            <button className={tab === 'update' ? 'nav-btn active' : 'nav-btn'} onClick={() => switchTab('update')}>Update Data</button>
           </nav>
         </div>
       </header>
 
       <main className="main">
-        {tab === 'search' && (
+        {loadError && <div className="status-err">Could not load plant data: {loadError}</div>}
+        {!allPlants && !loadError && <div className="spinner-wrap"><div className="spinner" /></div>}
+
+        {tab === 'browse' && allPlants && !selectedGroup && (
+          <div className="groups-panel">
+            <h1 className="page-title">Select a Plant Group</h1>
+            <div className="group-grid">
+              {groups.map(g => (
+                <button key={g} className="group-btn" onClick={() => selectGroup(g)}>
+                  <span className="group-icon">{groupIcon(g)}</span>
+                  <span className="group-label">{g}</span>
+                  <span className="group-count">{allPlants.filter(p => p.PullGroup === g).length}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab === 'browse' && allPlants && selectedGroup && (
+          <div className="group-detail">
+            <div className="detail-header">
+              <button className="back-btn" onClick={clearGroup}>← Groups</button>
+              <h2 className="detail-title">{selectedGroup}</h2>
+              <div className="sort-toggle">
+                <button className={sortBy === 'botanical' ? 'sort-btn active' : 'sort-btn'} onClick={() => { setSortBy('botanical'); setBrowsePage(1); }}>Botanical</button>
+                <button className={sortBy === 'common' ? 'sort-btn active' : 'sort-btn'} onClick={() => { setSortBy('common'); setBrowsePage(1); }}>Common</button>
+              </div>
+            </div>
+            <div className="results-header">
+              <span>{groupPlants.length} plant{groupPlants.length !== 1 ? 's' : ''}</span>
+              {browsePages > 1 && (
+                <div className="pagination">
+                  <button disabled={browsePage <= 1} onClick={() => setBrowsePage(p => p - 1)}>‹</button>
+                  <span>{browsePage} / {browsePages}</span>
+                  <button disabled={browsePage >= browsePages} onClick={() => setBrowsePage(p => p + 1)}>›</button>
+                </div>
+              )}
+            </div>
+            <div className="result-cards">
+              {browseRows.map((r, i) => <PlantCard key={i} r={r} sortBy={sortBy} />)}
+            </div>
+            <div className="table-wrap">
+              <table className="results-table">
+                <thead>
+                  <tr>
+                    {sortBy === 'botanical'
+                      ? <><th>Botanical Name</th><th>Common Name</th></>
+                      : <><th>Common Name</th><th>Botanical Name</th></>
+                    }
+                    <th>Size</th><th>Outlet Location</th><th>Nursery Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {browseRows.map((r, i) => (
+                    <tr key={i}>
+                      {sortBy === 'botanical'
+                        ? <><td className="botanical-cell"><em>{r.BotanicalName}</em></td><td>{r.CommonName}</td></>
+                        : <><td>{r.CommonName}</td><td className="botanical-cell"><em>{r.BotanicalName}</em></td></>
+                      }
+                      <td className="size-cell">{r.ProductSize}</td>
+                      <td className="location-cell">{r['Outlet Location']}</td>
+                      <td className="location-cell nursery">{r['Nursery Location']}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {tab === 'search' && allPlants && (
           <div className="search-panel">
             <div className="search-bar-card">
               <h1 className="search-title">Find a Plant</h1>
               <div className="mode-buttons">
-                <button className={searchBy === 'genus' ? 'mode-btn active' : 'mode-btn'} onClick={() => switchSearchBy('genus')}>
-                  Search by Genus
-                </button>
-                <button className={searchBy === 'common' ? 'mode-btn active' : 'mode-btn'} onClick={() => switchSearchBy('common')}>
-                  Search by Common Name
-                </button>
+                <button className={searchBy === 'genus' ? 'mode-btn active' : 'mode-btn'} onClick={() => { setSearchBy('genus'); setQuery(''); }}>Search by Genus</button>
+                <button className={searchBy === 'common' ? 'mode-btn active' : 'mode-btn'} onClick={() => { setSearchBy('common'); setQuery(''); }}>Search by Common Name</button>
               </div>
               <div className="search-input-wrap">
-                <input
-                  ref={inputRef}
-                  className="search-input"
-                  type="text"
+                <input ref={inputRef} className="search-input" type="text"
                   placeholder={searchBy === 'genus' ? 'e.g. Acer, Malus…' : 'e.g. Apple, Maple…'}
                   value={query}
                   onChange={e => { setQuery(e.target.value); setShowSugg(true); }}
                   onFocus={() => setShowSugg(true)}
                   onBlur={() => setTimeout(() => setShowSugg(false), 150)}
-                  autoComplete="off"
-                  disabled={!allPlants}
-                />
+                  autoComplete="off" />
                 {showSugg && suggestions.length > 0 && (
                   <ul className="suggestions">
                     {suggestions.map(s => (
-                      <li key={s} onMouseDown={() => pickSuggestion(s)}>{s}</li>
+                      <li key={s} onMouseDown={() => { setQuery(s); setShowSugg(false); }}>{s}</li>
                     ))}
                   </ul>
                 )}
               </div>
             </div>
-
-            {loadError && (
-              <div className="status-err">Could not load plant data: {loadError}</div>
+            {!debouncedQuery.trim() && (
+              <div className="placeholder"><div className="placeholder-icon">🔍</div><p>Type a genus or common name to find plants.</p></div>
             )}
-
-            {!allPlants && !loadError && (
-              <div className="spinner-wrap"><div className="spinner" /></div>
-            )}
-
-            {allPlants && !searched && (
-              <div className="placeholder">
-                <div className="placeholder-icon">🌱</div>
-                <p>Search by genus or common name to find plant locations.</p>
-              </div>
-            )}
-
-            {allPlants && searched && (
+            {debouncedQuery.trim() && (
               <>
                 <div className="results-header">
                   <span>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-                  {totalPages > 1 && (
+                  {searchPages > 1 && (
                     <div className="pagination">
-                      <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹ Prev</button>
-                      <span>Page {page} of {totalPages}</span>
-                      <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next ›</button>
+                      <button disabled={searchPage <= 1} onClick={() => setSearchPage(p => p - 1)}>‹ Prev</button>
+                      <span>Page {searchPage} of {searchPages}</span>
+                      <button disabled={searchPage >= searchPages} onClick={() => setSearchPage(p => p + 1)}>Next ›</button>
                     </div>
                   )}
                 </div>
-
                 {filtered.length === 0
-                  ? <div className="empty">No plants found. Try a different search term.</div>
+                  ? <div className="empty">No plants found.</div>
                   : <>
-                    {/* Card view — mobile */}
-                    <div className="result-cards">
-                      {pageRows.map((r, i) => (
-                        <div className="result-card" key={i}>
-                          <div className="card-genus">{r.Genus}</div>
-                          <div className="card-botanical">{r.BotanicalName}</div>
-                          {r.CommonName && <div className="card-common">{r.CommonName}</div>}
-                          <div className="card-row">
-                            {r.ProductSize && (
-                              <span className="card-pill">
-                                <span className="card-pill-label">Size</span>
-                                <span className="card-pill-value">{r.ProductSize}</span>
-                              </span>
-                            )}
-                            {r['Outlet Location'] && (
-                              <span className="card-pill location">
-                                <span className="card-pill-label">Outlet</span>
-                                <span className="card-pill-value">{r['Outlet Location']}</span>
-                              </span>
-                            )}
-                            {r['Nursery Location'] && (
-                              <span className="card-pill location">
-                                <span className="card-pill-label">Nursery</span>
-                                <span className="card-pill-value">{r['Nursery Location']}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Table view — desktop */}
+                    <div className="result-cards">{searchRows.map((r, i) => <PlantCard key={i} r={r} sortBy="botanical" />)}</div>
                     <div className="table-wrap">
                       <table className="results-table">
-                        <thead>
-                          <tr>
-                            <th>Genus</th>
-                            <th>Botanical Name</th>
-                            <th>Common Name</th>
-                            <th>Size</th>
-                            <th>Outlet Location</th>
-                            <th>Nursery Location</th>
+                        <thead><tr><th>Genus</th><th>Botanical Name</th><th>Common Name</th><th>Size</th><th>Outlet Location</th><th>Nursery Location</th></tr></thead>
+                        <tbody>{searchRows.map((r, i) => (
+                          <tr key={i}>
+                            <td className="genus-cell">{r.Genus}</td>
+                            <td className="botanical-cell"><em>{r.BotanicalName}</em></td>
+                            <td>{r.CommonName}</td>
+                            <td className="size-cell">{r.ProductSize}</td>
+                            <td className="location-cell">{r['Outlet Location']}</td>
+                            <td className="location-cell nursery">{r['Nursery Location']}</td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {pageRows.map((r, i) => (
-                            <tr key={i}>
-                              <td className="genus-cell">{r.Genus}</td>
-                              <td className="botanical-cell"><em>{r.BotanicalName}</em></td>
-                              <td>{r.CommonName}</td>
-                              <td className="size-cell">{r.ProductSize}</td>
-                              <td className="location-cell">{r['Outlet Location']}</td>
-                              <td className="location-cell nursery">{r['Nursery Location']}</td>
-                            </tr>
-                          ))}
-                        </tbody>
+                        ))}</tbody>
                       </table>
                     </div>
                   </>
@@ -238,45 +260,48 @@ export default function App() {
   );
 }
 
+function PlantCard({ r, sortBy }) {
+  const primary = sortBy === 'common' ? r.CommonName : r.BotanicalName;
+  const secondary = sortBy === 'common' ? r.BotanicalName : r.CommonName;
+  return (
+    <div className="result-card">
+      <div className="card-primary">{sortBy === 'botanical' ? <em>{primary}</em> : primary}</div>
+      {secondary && <div className="card-secondary">{sortBy === 'botanical' ? secondary : <em>{secondary}</em>}</div>}
+      <div className="card-row">
+        {r.ProductSize && (<span className="card-pill"><span className="card-pill-label">Size</span><span className="card-pill-value">{r.ProductSize}</span></span>)}
+        {r['Outlet Location'] && (<span className="card-pill location"><span className="card-pill-label">Outlet</span><span className="card-pill-value">{r['Outlet Location']}</span></span>)}
+        {r['Nursery Location'] && (<span className="card-pill location"><span className="card-pill-label">Nursery</span><span className="card-pill-value">{r['Nursery Location']}</span></span>)}
+      </div>
+    </div>
+  );
+}
+
+function groupIcon(group) {
+  const g = group.toLowerCase();
+  if (g.includes('tree')) return '🌳';
+  if (g.includes('shrub')) return '🌿';
+  if (g.includes('fruit')) return '🍎';
+  if (g.includes('perennial')) return '🌸';
+  if (g.includes('annual')) return '🌼';
+  if (g.includes('grass')) return '🌾';
+  if (g.includes('fern')) return '🌿';
+  if (g.includes('vine')) return '🍃';
+  if (g.includes('herb')) return '🌱';
+  if (g.includes('rose')) return '🌹';
+  if (g.includes('bulb')) return '🌷';
+  if (g.includes('cactus') || g.includes('succulent')) return '🌵';
+  return '🪴';
+}
+
 function UpdatePanel() {
   return (
     <div className="upload-panel">
       <h2>Update Plant Data</h2>
-      <p className="upload-note">
-        This app is hosted on GitHub Pages. To update the plant data, replace the
-        <code> client/public/plants.json</code> file in the repository and push — the site
-        rebuilds automatically within a minute.
-      </p>
-
+      <p className="upload-note">Replace <code>client/public/plants.json</code> in the repository and push — the site rebuilds automatically within a minute.</p>
       <div className="update-steps">
-        <div className="update-step">
-          <div className="step-num">1</div>
-          <div className="step-body">
-            <strong>Export your data</strong>
-            <p>Run your SQL query and export the results as a JSON array. Each record should include:
-              <code> PullGroup, ProductID, ProductSize, Genus, BotanicalName, CommonName, CommonNameAlpha, Outlet Location, Nursery Location</code>
-            </p>
-          </div>
-        </div>
-        <div className="update-step">
-          <div className="step-num">2</div>
-          <div className="step-body">
-            <strong>Replace plants.json</strong>
-            <p>In the GitHub repository, navigate to <code>client/public/plants.json</code>, click the pencil icon, paste your new data, and commit.</p>
-          </div>
-        </div>
-        <div className="update-step">
-          <div className="step-num">3</div>
-          <div className="step-body">
-            <strong>Wait ~1 minute</strong>
-            <p>GitHub Actions rebuilds the site automatically. Refresh the app and your new data will be live.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="api-doc" style={{marginTop: '1.5rem'}}>
-        <strong>Automate it:</strong> POST your JSON directly to the GitHub Contents API to update
-        <code> plants.json</code> without touching GitHub manually — contact your developer to set this up.
+        <div className="update-step"><div className="step-num">1</div><div className="step-body"><strong>Export your data</strong><p>Run your SQL query and export as a JSON array with fields: <code>PullGroup, ProductID, ProductSize, Genus, BotanicalName, CommonName, CommonNameAlpha, Outlet Location, Nursery Location</code></p></div></div>
+        <div className="update-step"><div className="step-num">2</div><div className="step-body"><strong>Replace plants.json</strong><p>In the GitHub repository, navigate to <code>client/public/plants.json</code>, click the pencil icon, paste your new data, and commit.</p></div></div>
+        <div className="update-step"><div className="step-num">3</div><div className="step-body"><strong>Wait ~1 minute</strong><p>GitHub Actions rebuilds the site automatically. Refresh the app and the new data will be live.</p></div></div>
       </div>
     </div>
   );
