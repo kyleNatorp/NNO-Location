@@ -252,16 +252,18 @@ function PlantTable({ rows, sortBy }) {
 
 function groupIcon(group) {
   const g = group.toLowerCase();
-  if (g.includes('tree')) return '🌳';
+  if (g === 'large tree') return '🌳';
+  if (g === 'small tree') return '🌲';
   if (g.includes('shrub')) return '🌿';
   if (g.includes('fruit')) return '🍎';
   if (g.includes('perennial')) return '🌸';
   if (g.includes('annual')) return '🌼';
   if (g.includes('grass')) return '🌾';
-  if (g.includes('fern')) return '🌿';
-  if (g.includes('vine')) return '🍃';
+  if (g.includes('groundcover')) return '🍃';
   if (g.includes('herb')) return '🌱';
   if (g.includes('rose')) return '🌹';
+  if (g.includes('vegetable')) return '🥦';
+  if (g.includes('vine')) return '🍃';
   if (g.includes('bulb')) return '🌷';
   if (g.includes('cactus') || g.includes('succulent')) return '🌵';
   return '🪴';
